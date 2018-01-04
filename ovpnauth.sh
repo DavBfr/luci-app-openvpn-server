@@ -6,16 +6,30 @@ USERPASS=`cat $1`
 USERNAME=`echo $USERPASS | awk '{print $1}'`
 PASSWORD=`echo $USERPASS | awk '{print $2}'`
 
+. /lib/functions.sh
+config_load "$TAG"
+
 logger -t "$TAG" "Try to authenticate $USERNAME / $PASSWORD"
 
-SALT=$(uci get $TAG.$USERNAME.salt)
-PASS=$(uci get $TAG.$USERNAME.pass)
-PASSWORD=$(echo -n "${SALT}${PASSWORD}" | openssl dgst -sha256 -binary | openssl base64)
+auth_cb() {
+	local name="$1"
+	config_get login "$name" "login" "_"
+	config_get pass "$name" "pass" "_"
+	config_get salt "$name" "salt" "_"
 
-if [ "$USERNAME" = "dad" -a "$PASSWORD" = "$PASS" ]; then
-	logger -t "$TAG" "OpenVPN user $USERNAME authenticated"
-	exit 0
-fi
+	config_get_bool enabled "$name" "enabled" 0
+
+	if [ $enabled -ne 0 ]; then
+		CPASS=$(echo -n "${salt}${PASSWORD}" | openssl dgst -sha256 -binary | openssl base64)
+
+		if [ "$USERNAME" = "$login" -a "$CPASS" = "$pass" ]; then
+			logger -t "$TAG" "OpenVPN user $USERNAME authenticated"
+			exit 0
+		fi
+	fi
+}
+
+config_foreach auth_cb 'user'
 
 logger -t "$TAG" "OpenVPN user $USERNAME authentication failed"
 exit 1
