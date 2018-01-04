@@ -1,6 +1,9 @@
 #!/bin/sh
+
 set -e
 set -x
+
+. /lib/functions/network.sh
 
 LEN=1024
 DAYS=10950
@@ -67,9 +70,10 @@ KEY_CONTENT=$(cat $CKEY)
 CRT_CONTENT=$(cat $CCERT)
 DATE=$(date)
 SETTINGS='@settings[0]'
-EXT_IP=$(uci get $TAG.$SETTINGS.external_ip)
-EXT_PORT=$(uci get $TAG.$SETTINGS.external_port)
-PROTO=$(uci get $TAG.$SETTINGS.proto)
+#network_get_ipaddr ip wan; echo $ip
+EXT_IP=$(uci get $TAG.$SETTINGS.external_ip || { network_get_ipaddr ip wan; echo $ip; } )
+EXT_PORT=$(uci get $TAG.$SETTINGS.external_port || echo "1194" )
+PROTO=$(uci get $TAG.$SETTINGS.proto || echo "udp" )
 cat > $OVPN <<EOF
 # Auto-generated configuration file from FF
 # $DATE
