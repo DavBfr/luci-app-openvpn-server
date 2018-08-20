@@ -12,8 +12,8 @@ define Package/luci-app-openvpn-server
 	SUBMENU:=OpenVPN Server
 	SECTION:=luci
 	CATEGORY:=LuCI
-	URL:=https://github.com/DavBfr/wifidog-auth-luci
-	MAINTAINER:=David <dev.nfet.net@gmail.com>
+	URL:=https://github.com/DavBfr/luci-app-openvpn-server
+	MAINTAINER:=David PHAM-VAN <dev.nfet.net@gmail.com>
 	SUBMENU:=3. Applications
 	DEPENDS:=+openvpn-openssl +openssl-util
 	TITLE:=OpenVPN Server
@@ -27,7 +27,7 @@ define Package/luci-app-openvpn-server/conffiles
 /etc/config/ovpnauth
 endef
 
-define Package/wifidog-auth-luci/description
+define Package/luci-app-openvpn-server/description
 	This package contains LuCI configuration pages to configure an OpenVPN Server.
 endef
 
@@ -40,31 +40,20 @@ endef
 define Build/Compile
 endef
 
-define Package/wifidog-auth-luci/install
+define Package/luci-app-openvpn-server/install
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller/wifidog-auth
-	
-	$(INSTALL_CONF) ./files/root/etc/config/wifidog $(1)/etc/config/
-	
-	$(INSTALL_BIN) ./files/root/etc/init.d/wifidog $(1)/etc/init.d/
-	$(INSTALL_BIN) ./files/root/etc/uci-defaults/luci-wifidog $(1)/etc/uci-defaults/
-	
-	$(INSTALL_DATA) ./files/root/usr/lib/lua/luci/model/cbi/wifidog.lua $(1)/usr/lib/lua/luci/model/cbi/
-	$(INSTALL_DATA) ./files/root/usr/lib/lua/luci/controller/wifidog.lua $(1)/usr/lib/lua/luci/controller/
-	
-	$(INSTALL_DATA) ./files/root/usr/lib/lua/luci/controller/wifidog-auth/auth.lua $(1)/usr/lib/lua/luci/controller/wifidog-auth/
-	$(INSTALL_DATA) ./files/root/usr/lib/lua/luci/controller/wifidog-auth/login.lua $(1)/usr/lib/lua/luci/controller/wifidog-auth/
-	$(INSTALL_DATA) ./files/root/usr/lib/lua/luci/controller/wifidog-auth/gw_message.lua $(1)/usr/lib/lua/luci/controller/wifidog-auth/
-	$(INSTALL_DATA) ./files/root/usr/lib/lua/luci/controller/wifidog-auth/ping.lua $(1)/usr/lib/lua/luci/controller/wifidog-auth/
-	$(INSTALL_DATA) ./files/root/usr/lib/lua/luci/controller/wifidog-auth/portal.lua $(1)/usr/lib/lua/luci/controller/wifidog-auth/
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller/openvpn-server
+	$(INSTALL_DIR) $(1)/usr/bin
+
+	$(INSTALL_BIN) ./gen_openvpn_server_keys.sh $(1)/usr/bin/
+	$(INSTALL_BIN) ./add_ovpn_user.sh $(1)/usr/bin/
+	$(INSTALL_BIN) ./ovpnauth.sh $(1)/usr/bin/
 endef
 
-define Package/wifidog-auth-luci/postinst
-
+define Package/luci-app-openvpn-server/postinst
+	/usr/bin/gen_openvpn_server_keys.sh
 endef
 
-$(eval $(call BuildPackage,wifidog-auth-luci))
+$(eval $(call BuildPackage,luci-app-openvpn-server))
