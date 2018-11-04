@@ -47,12 +47,20 @@ define Package/luci-app-openvpn-server/install
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller/openvpn-server
 	$(INSTALL_DIR) $(1)/usr/bin
 
-	$(INSTALL_BIN) ./gen_openvpn_server_keys.sh $(1)/usr/bin/
-	$(INSTALL_BIN) ./add_ovpn_user.sh $(1)/usr/bin/
-	$(INSTALL_BIN) ./ovpnauth.sh $(1)/usr/bin/
+	$(INSTALL_BIN) ./src/gen_openvpn_server_keys.sh $(1)/usr/bin/
+	$(INSTALL_BIN) ./src/add_ovpn_user.sh $(1)/usr/bin/
+	$(INSTALL_BIN) ./src/ovpnauth.sh $(1)/usr/bin/
+	$(INSTALL_CONF) ./src/ovpnauth.config $(1)/etc/config/ovpnauth
+endef
+
+define Package/openvpn-$(BUILD_VARIANT)/conffiles
+/etc/config/ovpnauth
 endef
 
 define Package/luci-app-openvpn-server/postinst
+	. /lib/functions/network.sh
+	uci set ovpnauth.settings.external_ip=$$(network_get_ipaddr ip wan;echo $ip)
+	uci commit ovpnauth
 	/usr/bin/gen_openvpn_server_keys.sh
 endef
 

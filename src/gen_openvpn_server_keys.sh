@@ -1,7 +1,7 @@
 #!/bin/sh
 
-set -e
-set -x
+# set -e
+# set -x
 
 . /lib/functions/network.sh
 
@@ -108,6 +108,7 @@ $TA_CONTENT
 </tls-auth>
 EOF
 
+uci set openvpn.openvpn_server=openvpn
 uci set openvpn.openvpn_server.port=$EXT_PORT
 uci set openvpn.openvpn_server.proto=$PROTO
 uci set openvpn.openvpn_server.dev=tun
@@ -135,3 +136,4 @@ uci set openvpn.openvpn_server.status=/tmp/openvpn-status.log
 uci set openvpn.openvpn_server.script_security=2
 uci set openvpn.openvpn_server.auth_user_pass_verify="/usr/bin/ovpnauth.sh via-file"
 uci set openvpn.openvpn_server.username_as_common_name=1
+uci commit openvpn

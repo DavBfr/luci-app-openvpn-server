@@ -1,0 +1,39 @@
+sudo: false
+language: c
+compiler: gcc
+
+notifications:
+  email: false
+
+env:
+  global:
+  - PACKAGE=luci-app-openvpn-server
+  matrix:
+  - SDK_URL=https://downloads.openwrt.org/releases/18.06.1/targets/x86/generic/openwrt-sdk-18.06.1-x86-generic_gcc-7.3.0_musl.Linux-x86_64.tar.xz
+
+install:
+- mkdir sdk
+- curl -L $SDK_URL | tar xJ --strip-components=1 -C sdk
+- mkdir -p sdk/package/$PACKAGE
+- ln -sf ../../../Makefile sdk/package/$PACKAGE/
+- ln -sf ../../../src sdk/package/$PACKAGE/
+- echo "CONFIG_HAVE_DOT_CONFIG=y" > sdk/.config
+
+script:
+- cd sdk
+- make V=s package/$PACKAGE/compile
+- find . -name *.ipk -exec mv {} $TRAVIS_BUILD_DIR \;
+- cd $TRAVIS_BUILD_DIR/
+
+before_deploy:
+  git fetch --tags
+
+deploy:
+  provider: releases
+  api_key:
+    secure: CD69l0r6SEtPBLgCWH0i9xit8gyTJGpaDXd9PXn6G0ZOFUVFxdAcHSbq8GrkVFp7aIN+qDZOSx0YA+kZY/iRHEwG21lcbGl8ZqAKydREtXPkInw5JXT0YKzCW+LrZp6WLtfSqKWz+nfoa/9NGaAVtZbIBBSD0ezwYIDKqEINBKgHMFrgHYCbvcZAvmyze7LFNUwrQPbD2q8CSCO9dp6pD+gGUmLZkZezrK5xFooNdLXl26L/oytzvdwMxlW+RmUj5GICdBv2NN/5zw5oZDbzN9MNeMPKfs5XP++ac+WWy9yU6jaok/yzQtMUvN/WXhEwsE2hhRNvF52IUyROBX7CqlqCYDrsLxFBfPR5w9pAsCkXLZ8Q1/AX9yT7lVrlDZTaOsC+MM8b02TbyB2Ygk8Mi8fgR8Ao3AEn7HMPH1CB7UN+KXtBFEwRv8RNOLi3+Bh/UWyVip8AZQabQ9k5BWJPit+SEV5/JdpgEgMHbutJX3OrdsCFxcm8vUqXBBbjl03O3NHPf/oBeXnwR2NPm4+cybJlIJKKb5rF2rDlcssMIXGyfRQdypsacCpBZS1UXI9EkRllWu/JQlFEFmaGrCkgvshjaT/ljynmhliOgN0ud7lN8Ock3BHNYDBLyH2VgoRzbhbTrq1kbYT8SJZEiIBQHHoAgq3pYwArf8T0/LU2Vt4=
+  skip_cleanup: true
+  file_glob: true
+  file: $TRAVIS_BUILD_DIR/$PACKAGE*.ipk
+  # on:
+    # tags: true
