@@ -1,4 +1,6 @@
 #/bin/sh
+# Copyright 2018 David PHAM-VAN <dev.nfet.net@gmail.com>
+# Licensed to the public under the Apache License 2.0.
 
 TAG="ovpnauth"
 USER="$1"
@@ -15,3 +17,4 @@ uci set "$TAG.$ID.pass=$PASS"
 uci set "$TAG.$ID.login=$USER"
 uci set "$TAG.$ID.enabled=1"
 uci commit "$TAG"
+chmod 644 /etc/config/ovpnauth

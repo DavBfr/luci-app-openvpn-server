@@ -44,13 +44,16 @@ define Package/luci-app-openvpn-server/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller/openvpn-server
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/view
 	$(INSTALL_DIR) $(1)/usr/bin
 
 	$(INSTALL_BIN) ./src/gen_openvpn_server_keys.sh $(1)/usr/bin/
 	$(INSTALL_BIN) ./src/add_ovpn_user.sh $(1)/usr/bin/
 	$(INSTALL_BIN) ./src/ovpnauth.sh $(1)/usr/bin/
-	$(INSTALL_CONF) ./src/ovpnauth.config $(1)/etc/config/ovpnauth
+	$(CP) ./src/ovpnauth.lua $(1)/usr/lib/lua/luci/controller/
+	$(CP) ./src/ovpnauth-mod.lua $(1)/usr/lib/lua/luci/model/cbi/
+	$(CP) ./src/ovpnauth.htm $(1)/usr/lib/lua/luci/view/
+	$(INSTALL_DATA) ./src/ovpnauth.config $(1)/etc/config/ovpnauth
 endef
 
 define Package/openvpn-$(BUILD_VARIANT)/conffiles
@@ -59,7 +62,7 @@ endef
 
 define Package/luci-app-openvpn-server/postinst
 	. /lib/functions/network.sh
-	uci set ovpnauth.settings.external_ip=$$(network_get_ipaddr ip wan;echo $ip)
+	uci set ovpnauth.settings.external_ip=$$(network_get_ipaddr ip wan;echo $$ip)
 	uci commit ovpnauth
 	/usr/bin/gen_openvpn_server_keys.sh
 endef

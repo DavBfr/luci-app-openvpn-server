@@ -1,5 +1,7 @@
 # luci-app-openvpn-server
 
+[![Build Status](https://travis-ci.org/DavBfr/luci-app-openvpn-server.svg?branch=master)](https://travis-ci.org/DavBfr/luci-app-openvpn-server)
+
 ## Features
 
 ## Install
