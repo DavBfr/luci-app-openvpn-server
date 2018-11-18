@@ -35,5 +35,5 @@ deploy:
   skip_cleanup: true
   file_glob: true
   file: $TRAVIS_BUILD_DIR/$PACKAGE*.ipk
-  # on:
-    # tags: true
+  on:
+    tags: true

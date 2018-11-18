@@ -17,4 +17,3 @@ uci set "$TAG.$ID.pass=$PASS"
 uci set "$TAG.$ID.login=$USER"
 uci set "$TAG.$ID.enabled=1"
 uci commit "$TAG"
-chmod 644 /etc/config/ovpnauth

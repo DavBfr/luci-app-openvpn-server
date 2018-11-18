@@ -35,4 +35,5 @@ auth_cb() {
 config_foreach auth_cb 'user'
 
 logger -t "$TAG" "OpenVPN user $USERNAME authentication failed"
+sleep 3
 exit 1

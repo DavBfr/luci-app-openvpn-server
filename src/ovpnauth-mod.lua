@@ -4,19 +4,19 @@
 local sys = require "luci.sys"
 require("luci.template")
 local io = require("io")
+local util = require("luci.util")
+local class = util.class
 
 m = Map("ovpnauth", translate("OpenVPN Server"))
+m:chain("openvpn")
+m:chain("network")
 
-s = m:section(TypedSection, "settings", "Server Configuration")
+-- OpenVPN Client settings
+
+s = m:section(TypedSection, "settings", "Client Configuration")
 s.anonymous = true
 
 s:option(Value, "external_ip", translate("WAN IP or DNS name"))
-s:option(Value, "external_port", translate("Server port"))
-pr = s:option(ListValue, "proto", translate("Protocol"))
-pr:value("tcp", "TCP")
-pr:value("udp", "UDP")
-s:option(Flag, "enabled", translate("Enabled"))
-
 local d = Template("ovpnauth")
 s:append(d)
 function d.parse()
@@ -37,8 +37,8 @@ function d.parse()
 		luci.http.write("persist-key\n")
 		luci.http.write("persist-tun\n")
 		local ext_ip = Map.formvalue(m, "cbid.ovpnauth.settings.external_ip")
-		local ext_port = Map.formvalue(m, "cbid.ovpnauth.settings.external_port")
-		local ext_proto = Map.formvalue(m, "cbid.ovpnauth.settings.proto")
+		local ext_port = Map.formvalue(m, "cbid.openvpn.openvpn_server.port")
+		local ext_proto = Map.formvalue(m, "cbid.openvpn.openvpn_server.proto")
 		luci.http.write("remote " .. ext_ip .. " " .. ext_port .. " " .. ext_proto .. "\n")
 		luci.http.write("resolv-retry infinite\n")
 		luci.http.write("script-security 2\n")
@@ -69,6 +69,8 @@ function d.parse()
 	end
 end
 
+-- OpenVPN Users list
+
 s = m:section(TypedSection, "user", translate("User accounts")
   , translate("Please add users who can connect to the VPN server."))
 s.anonymous = true
@@ -97,36 +99,82 @@ end
 ro = s:option(Flag, "enabled", translate("Enabled"))
 ro.rmempty = false
 
-function m.on_save(self)
-	-- sys.call("/usr/bin/gen_openvpn_server_keys.sh")
+-- Hidden values class
+
+HiddenValue = class(DummyValue)
+
+function HiddenValue.__init__(self, ...)
+	DummyValue.__init__(self, ...)
+end
+
+function HiddenValue.render(self, s, scope)
+end
+
+-- OpenVPN Server settings
+
+m1 = Map("openvpn", translate("OpenVPN Server"))
+s1 = m1:section(NamedSection, "openvpn_server", "openvpn")
+
+o = s1:option(Value, "port", translate("Server port"))
+o.default = 1194
+
+o = s1:option(ListValue, "proto", translate("Protocol"))
+o:value("tcp", "TCP")
+o:value("udp", "UDP")
+o.default = "udp"
+
+o = s1:option(Value,"server",translate("Addresses range"))
+o.default = "10.8.0.0 255.255.255.0"
+
+o = s1:option(Flag, "enabled", translate("Enabled"))
+o.default = true
+
+o = s1:option(DynamicList, "push", translate("Push options to peer"))
+o.default = {"redirect-gateway", "dhcp-option DNS 10.8.0.1"}
+
+o = s1:option(Flag, "client_to_client", translate("Allow client-to-client traffic"))
+o.default = true
+
+o = s1:option(ListValue, "verb", translate("Set output verbosity"))
+o:value("0", "No log")
+o:value("3", "Normal log")
+o:value("5", "Dump traffic")
+o:value("11", "Debug")
+
+local params = {
+	{"dev", "tun", translate("Type of used device")},
+	{"ca", "/etc/openvpn/ca.crt", translate("Certificate authority")},
+	{"cert", "/etc/openvpn/server.crt", translate("Local certificate")},
+	{"key", "/etc/openvpn/server.key", translate("Local private key")},
+	{"dh", "/etc/openvpn/dh1024.pem", translate("Diffie Hellman parameters")},
+	{"ifconfig_pool_persist", "/tmp/ipp.txt", translate("Persist/unpersist ifconfig-pool")},
+	{"remote_cert_tls", "client", translate("Require explicit key usage on certificate")},
+	{"keepalive", "10 120", translate("Keepalive")},
+	{"tls_auth", "/etc/openvpn/ta.key 0", translate("Additional authentication over TLS")},
+	{"cipher", "BF-CBC", translate("Encryption cipher for packets")},
+	{"compress", "lzo", translate("Copmression")},
+	{"persist_key", "1", translate("Don't re-read key on restart")},
+	{"persist_tun", "1", translate("Keep tun/tap device open on restart")},
+	{"status", "/tmp/openvpn-status.log", translate("Write status to file every n seconds")},
+	{"script_security", "2", translate("Policy level over usage of external programs an)d scripts")},
+	{"auth_user_pass_verify", "/usr/bin/ovpnauth.sh via-file", translate("Script used to authenticate users")},
+	{"username_as_common_name", "1", translate("Use username as common name")}
+}
+
+for _, option in ipairs(params) do
+	local o = s1:option(HiddenValue, option[1], option[3])
+	o.default = option[2]
+end
+
+function m1.on_after_commit(self)
+	sys.call("/etc/init.d/openvpn reload")
+end
+
+function m1.on_save(self)
 	local section = self.uci:section("openvpn", "openvpn", "openvpn_server")
-	self.uci:set("openvpn", section, "port", self:get("settings", "external_port"))
-	self.uci:set("openvpn", section, "proto", self:get("settings", "proto"))
-	self.uci:set("openvpn", section, "enabled", self:get("settings", "enabled"))
-	self.uci:set("openvpn", section, "dev", "tun")
-	self.uci:set("openvpn", section, "ca", "/etc/openvpn/ca.crt")
-	self.uci:set("openvpn", section, "cert", "/etc/openvpn/server.crt")
-	self.uci:set("openvpn", section, "key", "/etc/openvpn/server.key")
-	self.uci:set("openvpn", section, "dh", "/etc/openvpn/dh1024.pem")
-	self.uci:set("openvpn", section, "server", "10.8.0.0 255.255.255.0")
-	self.uci:set("openvpn", section, "ifconfig_pool_persist", "/tmp/ipp.txt")
-	self.uci:set("openvpn", section, "client_to_client", "1")
-	self.uci:set("openvpn", section, "remote_cert_tls", "client")
-	self.uci:set("openvpn", section, "verb", "3")
-	self.uci:set_list("openvpn", section, "push", {"redirect-gateway", "dhcp-option DNS 10.8.0.1"})
-	self.uci:set("openvpn", section, "keepalive", "10 120")
-	self.uci:set("openvpn", section, "tls_auth", "/etc/openvpn/ta.key 0")
-	self.uci:set("openvpn", section, "cipher", "BF-CBC")
-	self.uci:set("openvpn", section, "compress", "lzo")
-	self.uci:set("openvpn", section, "persist_key", "1")
-	self.uci:set("openvpn", section, "persist_tun", "1")
-	self.uci:set("openvpn", section, "user", "nobody")
-	self.uci:set("openvpn", section, "group", "nogroup")
-	self.uci:set("openvpn", section, "status", "/tmp/openvpn-status.log")
-	self.uci:set("openvpn", section, "script_security", "2")
-	self.uci:set("openvpn", section, "auth_user_pass_verify", "/usr/bin/ovpnauth.sh via-file")
-	self.uci:set("openvpn", section, "username_as_common_name", "1")
-	
+	self.uci:delete("openvpn", section, "user")
+	self.uci:delete("openvpn", section, "group")
+
 	local section = self.uci:section("network", "interface", "ovpn")
 	self.uci:set("network", section, "auto", "1")
 	self.uci:set("network", section, "ifname", "tun0")
@@ -134,9 +182,4 @@ function m.on_save(self)
 	self.uci:set("network", section, "auto", "1")
 end
 
-function m.on_after_commit(self)
-	sys.call("/etc/init.d/openvpn reload")
-	sys.call("chmod 644 /etc/config/ovpnauth")
-end
-
-return m
+return m,m1
