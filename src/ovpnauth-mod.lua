@@ -116,70 +116,27 @@ m1 = Map("openvpn", translate("OpenVPN Server"))
 s1 = m1:section(NamedSection, "openvpn_server", "openvpn")
 
 o = s1:option(Value, "port", translate("Server port"))
-o.default = 1194
 
 o = s1:option(ListValue, "proto", translate("Protocol"))
 o:value("tcp", "TCP")
 o:value("udp", "UDP")
-o.default = "udp"
 
 o = s1:option(Value,"server",translate("Addresses range"))
-o.default = "10.8.0.0 255.255.255.0"
 
 o = s1:option(Flag, "enabled", translate("Enabled"))
-o.default = true
 
 o = s1:option(DynamicList, "push", translate("Push options to peer"))
-o.default = {"redirect-gateway", "dhcp-option DNS 10.8.0.1"}
 
 o = s1:option(Flag, "client_to_client", translate("Allow client-to-client traffic"))
-o.default = true
 
-o = s1:option(ListValue, "verb", translate("Set output verbosity"))
+o = s1:option(ListValue, "verb", translate("Set log level"))
 o:value("0", "No log")
 o:value("3", "Normal log")
 o:value("5", "Dump traffic")
 o:value("11", "Debug")
 
-local params = {
-	{"dev", "tun", translate("Type of used device")},
-	{"ca", "/etc/openvpn/ca.crt", translate("Certificate authority")},
-	{"cert", "/etc/openvpn/server.crt", translate("Local certificate")},
-	{"key", "/etc/openvpn/server.key", translate("Local private key")},
-	{"dh", "/etc/openvpn/dh1024.pem", translate("Diffie Hellman parameters")},
-	{"ifconfig_pool_persist", "/tmp/ipp.txt", translate("Persist/unpersist ifconfig-pool")},
-	{"remote_cert_tls", "client", translate("Require explicit key usage on certificate")},
-	{"keepalive", "10 120", translate("Keepalive")},
-	{"tls_auth", "/etc/openvpn/ta.key 0", translate("Additional authentication over TLS")},
-	{"cipher", "BF-CBC", translate("Encryption cipher for packets")},
-	{"compress", "lzo", translate("Copmression")},
-	{"persist_key", "1", translate("Don't re-read key on restart")},
-	{"persist_tun", "1", translate("Keep tun/tap device open on restart")},
-	{"status", "/tmp/openvpn-status.log", translate("Write status to file every n seconds")},
-	{"script_security", "2", translate("Policy level over usage of external programs an)d scripts")},
-	{"auth_user_pass_verify", "/usr/bin/ovpnauth.sh via-file", translate("Script used to authenticate users")},
-	{"username_as_common_name", "1", translate("Use username as common name")}
-}
-
-for _, option in ipairs(params) do
-	local o = s1:option(HiddenValue, option[1], option[3])
-	o.default = option[2]
-end
-
 function m1.on_after_commit(self)
 	sys.call("/etc/init.d/openvpn reload")
-end
-
-function m1.on_save(self)
-	local section = self.uci:section("openvpn", "openvpn", "openvpn_server")
-	self.uci:delete("openvpn", section, "user")
-	self.uci:delete("openvpn", section, "group")
-
-	local section = self.uci:section("network", "interface", "ovpn")
-	self.uci:set("network", section, "auto", "1")
-	self.uci:set("network", section, "ifname", "tun0")
-	self.uci:set("network", section, "proto", "none")
-	self.uci:set("network", section, "auto", "1")
 end
 
 return m,m1
