@@ -68,45 +68,51 @@ chmod 600 "$CKEY"
 
 ip=`ubus call network.interface.wan status | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}';`
 
-uci set ovpnauth.settings.external_ip=$ip
-uci commit ovpnauth.settings
+if ! uci show ovpnauth.settings > /dev/null 2>&1; then
+	uci set ovpnauth.settings.external_ip=$ip
+	uci commit ovpnauth.settings
+fi
 
-uci set openvpn.openvpn_server=openvpn
-uci set openvpn.openvpn_server.port=1194
-uci set openvpn.openvpn_server.proto=udp
-uci set openvpn.openvpn_server.dev=tun
-uci set openvpn.openvpn_server.ca=$CA
-uci set openvpn.openvpn_server.cert=$CERT
-uci set openvpn.openvpn_server.key=$KEY
-uci set openvpn.openvpn_server.dh=$DH
-uci set openvpn.openvpn_server.server="10.8.0.0 255.255.255.0"
-uci set openvpn.openvpn_server.ifconfig_pool_persist=/tmp/ipp.txt
-uci set openvpn.openvpn_server.client_to_client=1
-uci set openvpn.openvpn_server.remote_cert_tls=client
-uci set openvpn.openvpn_server.verb=3
-uci delete openvpn.openvpn_server.push
-uci add_list openvpn.openvpn_server.push="redirect-gateway"
-uci add_list openvpn.openvpn_server.push="dhcp-option DNS 10.8.0.1"
-uci set openvpn.openvpn_server.keepalive="10 120"
-uci set openvpn.openvpn_server.tls_auth="$TA 0"
-uci set openvpn.openvpn_server.cipher=BF-CBC
-uci set openvpn.openvpn_server.compress=lzo
-uci set openvpn.openvpn_server.persist_key=1
-uci set openvpn.openvpn_server.persist_tun=1
-uci set openvpn.openvpn_server.status=/tmp/openvpn-status.log
-uci set openvpn.openvpn_server.script_security=2
-uci set openvpn.openvpn_server.auth_user_pass_verify="/usr/bin/ovpnauth.sh via-file"
-uci set openvpn.openvpn_server.username_as_common_name=1
-uci set openvpn.openvpn_server.enabled=1
-uci delete openvpn.openvpn_server.user
-uci delete openvpn.openvpn_server.group
-uci commit openvpn.openvpn_server
+if ! uci show openvpn.openvpn_server > /dev/null 2>&1; then
+	uci set openvpn.openvpn_server=openvpn
+	uci set openvpn.openvpn_server.port=1194
+	uci set openvpn.openvpn_server.proto=udp
+	uci set openvpn.openvpn_server.dev=tun
+	uci set openvpn.openvpn_server.ca=$CA
+	uci set openvpn.openvpn_server.cert=$CERT
+	uci set openvpn.openvpn_server.key=$KEY
+	uci set openvpn.openvpn_server.dh=$DH
+	uci set openvpn.openvpn_server.server="10.8.0.0 255.255.255.0"
+	uci set openvpn.openvpn_server.ifconfig_pool_persist=/tmp/ipp.txt
+	uci set openvpn.openvpn_server.client_to_client=1
+	uci set openvpn.openvpn_server.remote_cert_tls=client
+	uci set openvpn.openvpn_server.verb=3
+	uci delete openvpn.openvpn_server.push
+	uci add_list openvpn.openvpn_server.push="redirect-gateway"
+	uci add_list openvpn.openvpn_server.push="dhcp-option DNS 10.8.0.1"
+	uci set openvpn.openvpn_server.keepalive="10 120"
+	uci set openvpn.openvpn_server.tls_auth="$TA 0"
+	uci set openvpn.openvpn_server.cipher=BF-CBC
+	uci set openvpn.openvpn_server.compress=lzo
+	uci set openvpn.openvpn_server.persist_key=1
+	uci set openvpn.openvpn_server.persist_tun=1
+	uci set openvpn.openvpn_server.status=/tmp/openvpn-status.log
+	uci set openvpn.openvpn_server.script_security=2
+	uci set openvpn.openvpn_server.auth_user_pass_verify="/usr/bin/ovpnauth.sh via-file"
+	uci set openvpn.openvpn_server.username_as_common_name=1
+	uci set openvpn.openvpn_server.enabled=1
+	uci delete openvpn.openvpn_server.user
+	uci delete openvpn.openvpn_server.group
+	uci commit openvpn.openvpn_server
+fi
 
-uci set network.ovpn=interface
-uci set network.ovpn.auto=1
-uci set network.ovpn.ifname=tun0
-uci set network.ovpn.proto=none
-uci set network.ovpn.auto=1
-uci commit network.ovpn
+if ! uci show network.ovpn > /dev/null 2>&1; then
+	uci set network.ovpn=interface
+	uci set network.ovpn.auto=1
+	uci set network.ovpn.ifname=tun0
+	uci set network.ovpn.proto=none
+	uci set network.ovpn.auto=1
+	uci commit network.ovpn
+fi
 
 /etc/init.d/openvpn restart

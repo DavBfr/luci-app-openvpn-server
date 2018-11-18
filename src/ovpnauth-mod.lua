@@ -23,7 +23,7 @@ function d.parse()
 	if Map.formvalue(m, "download") then
 		luci.http.header('Content-Disposition', 'attachment; filename="client.ovpn"')
 		luci.http.prepare_content("application/x-openvpn-profile")
-		luci.http.write("# Auto-generated configuration file from\n")
+		luci.http.write("# Auto-generated configuration file\n")
 		luci.http.write("# " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n")
 		luci.http.write("auth-user-pass\n")
 		luci.http.write("client\n")
@@ -112,7 +112,7 @@ end
 
 -- OpenVPN Server settings
 
-m1 = Map("openvpn", translate("OpenVPN Server"))
+m1 = Map("openvpn", translate("Server configuration"))
 s1 = m1:section(NamedSection, "openvpn_server", "openvpn")
 
 o = s1:option(Value, "port", translate("Server port"))
