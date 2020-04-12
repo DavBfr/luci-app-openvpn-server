@@ -10,6 +10,6 @@ function index()
 
 	local page
 
-	page = entry({"admin", "services", "ovpnauth"}, cbi("ovpnauth-mod"), _("OpenVPN Server"))
+	page = entry({"admin", "vpn", "ovpnauth"}, cbi("ovpnauth-mod"), _("OpenVPN Server"))
 	page.dependent = true
 end
